@@ -1,0 +1,341 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>AES、RSA 算法详解 | 凉城的博客</title><meta name="author" content="凉城"><meta name="copyright" content="凉城"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="AES简介AES（Advanced Encryption Standard，译高级加密标准），是一款用来替代 DES 的对称加密算法，DES 当时被弃用的原因是密钥长度只有 56 位，现代的算力很容易就将其爆破出来。至于什么是对称加密算法，比如说你给我发一段话 ‘hello’，用 123456 当作密钥对其进行加密，然后发送给我，同样的我也要用 123456 当作密钥对密文进行解密，才能得到明文，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="AES、RSA 算法详解">
+<meta property="og:url" content="https://b.eval.moe/2026/11/11/uncategorized/AES%E3%80%81RSA%20%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3.html">
+<meta property="og:site_name" content="凉城的博客">
+<meta property="og:description" content="AES简介AES（Advanced Encryption Standard，译高级加密标准），是一款用来替代 DES 的对称加密算法，DES 当时被弃用的原因是密钥长度只有 56 位，现代的算力很容易就将其爆破出来。至于什么是对称加密算法，比如说你给我发一段话 ‘hello’，用 123456 当作密钥对其进行加密，然后发送给我，同样的我也要用 123456 当作密钥对密文进行解密，才能得到明文，">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://b.eval.moe/img/avatar.jpg">
+<meta property="article:published_time" content="2026-11-11T00:07:10.995Z">
+<meta property="article:modified_time" content="2026-11-11T00:07:12.196Z">
+<meta property="article:author" content="凉城">
+<meta property="article:tag" content="blog">
+<meta property="article:tag" content="信息安全">
+<meta property="article:tag" content="凉城的博客">
+<meta property="article:tag" content="博客">
+<meta property="article:tag" content="漏洞研究">
+<meta property="article:tag" content="网络安全">
+<meta property="article:tag" content="网络空间安全">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://b.eval.moe/img/avatar.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "AES、RSA 算法详解",
+  "url": "https://b.eval.moe/2026/11/11/uncategorized/AES%E3%80%81RSA%20%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3.html",
+  "image": "https://b.eval.moe/img/avatar.jpg",
+  "datePublished": "2026-11-11T00:07:10.995Z",
+  "dateModified": "2026-11-11T00:07:12.196Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "凉城",
+      "url": "https://b.eval.moe"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/avatar.jpg"><link rel="canonical" href="https://b.eval.moe/2026/11/11/uncategorized/AES%E3%80%81RSA%20%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.7.1.260810"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        try {
+          const data = { value }
+
+          if (ttl != null) {
+            data.expiry = Date.now() + ttl * 86400000
+          }
+
+          localStorage.setItem(key, JSON.stringify(data))
+        } catch (e) {
+          console.error(e)
+        }
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return
+
+        try {
+          const data = JSON.parse(itemStr)
+
+          if (data.expiry && Date.now() > data.expiry) {
+            localStorage.removeItem(key)
+            return
+          }
+
+          return data.value
+        } catch {
+          localStorage.removeItem(key)
+        }
+      }
+    }
+
+    const scriptCache = new Map()
+    const cssCache = new Map()
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => {
+        if (scriptCache.has(url)) {
+          return scriptCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+
+          script.src = url
+          script.async = true
+
+          for (const key in attr) {
+            script.setAttribute(key, attr[key])
+          }
+
+          script.onload = resolve
+          script.onerror = reject
+
+          document.head.appendChild(script)
+        })
+
+        scriptCache.set(url, promise)
+
+        return promise
+      },
+      getCSS: (url, id) => {
+        if (cssCache.has(url)) {
+          return cssCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const link = document.createElement('link')
+
+          link.rel = 'stylesheet'
+          link.href = url
+
+          if (id) {
+            link.id = id
+          }
+
+          link.onload = resolve
+          link.onerror = reject
+
+          document.head.appendChild(link)
+        })
+
+        cssCache.set(url, promise)
+
+        return promise
+      },
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!true && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+      const activateDarkMode = () => {
+        document.documentElement.dataset.theme = 'dark'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.dataset.theme = 'light'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'AES、RSA 算法详解',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.2"></head><body><div class="bg-animation" id="web_bg" style="background: linear-gradient(to right bottom, #e0eafc, #cfdef3);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">3</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">1</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 文章</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link"><i class="fa-fw fas fa-link"></i><span> 链接</span></a></div><div class="menus_item"><a class="site-page" href="/shuoshuo"><i class="fa-fw fas fa-comment-dots"></i><span> 说说</span></a></div><div class="menus_item"><a class="site-page" href="/about"><i class="fa-fw fas fa-user"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="not-top-img" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">凉城的博客</span></a><a class="nav-page-title" href="/"><span class="site-name">AES、RSA 算法详解</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 文章</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link"><i class="fa-fw fas fa-link"></i><span> 链接</span></a></div><div class="menus_item"><a class="site-page" href="/shuoshuo"><i class="fa-fw fas fa-comment-dots"></i><span> 说说</span></a></div><div class="menus_item"><a class="site-page" href="/about"><i class="fa-fw fas fa-user"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav></header><main class="layout" id="content-inner"><div id="post"><div id="post-info"><h1 class="post-title">AES、RSA 算法详解</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-11-11T00:07:10.995Z" title="发表于 2026-11-11 08:07:10">2026-11-11</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-11-11T00:07:12.196Z" title="更新于 2026-11-11 08:07:12">2026-11-11</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">1862</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>8 分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div><article class="container post-content" id="article-container"><h2 id="AES"><a href="#AES" class="headerlink" title="AES"></a>AES</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>AES（Advanced Encryption Standard，译高级加密标准），是一款用来替代 DES 的对称加密算法，DES 当时被弃用的原因是密钥长度只有 56 位，现代的算力很容易就将其爆破出来。至于什么是对称加密算法，比如说你给我发一段话 ‘hello’，用 123456 当作密钥对其进行加密，然后发送给我，同样的我也要用 123456 当作密钥对密文进行解密，才能得到明文，这整个流程的加密方式就叫做对称加密。<br>要想了解 AES 的加密算法，我们得先知道三个概念：密钥、填充、模式。</p>
+<h3 id="密钥"><a href="#密钥" class="headerlink" title="密钥"></a>密钥</h3><p>密钥是对称加密的根本，对称加密之所以对称，是因为其用同一个密钥，AES 密钥的长度呢可以自己选，所以 AES128、AES192、AES256 的对应意思就是 AES 的密钥长度，密钥长度分别为 128 位、192 位、256 位。</p>
+<h3 id="填充"><a href="#填充" class="headerlink" title="填充"></a>填充</h3><p>了解填充之前，我们还得先知道 AES 具体的加密流程。<br>我们用 AES128\ECB\NoPadding 进行举例：</p>
+<ol>
+<li>在加密开始之前，AES 会对数据明文以 16 byte，也就是 128 bit 进行分组，因为选用了 NoPadding ，也就是不对最后一组数据进行填充，所以每一组数据的长度必须满足长度等于 16 byte，如果最后一组长度只有 8 byte 的话会无法加密，并返回一些报错信息。</li>
+<li>分组之后利用 AES 加密器对分组后的数据明文进行加密，加密轮次包括初始轮、普通伦、最终伦，其中不同的密钥长度所对应的伦数也不一样，AES128：10轮，AES192：12轮，AES256：14轮，不同伦次的加密方式也不一样，初始轮只有加轮密钥的方式，普通伦有字节代替、行移位、列混淆、加伦密钥的方式，而最终伦只有字节代替、行移位、加伦密钥的方式，详细就不展开说了。</li>
+<li>最后将加密的密文拼接在一起。<br>填充的话一般有集中选项可以选，分别是 NoPadding、PKCS5Padding、ISO10126Padding。</li>
+</ol>
+<p>Nopadding 顾名思义是无填充，所以加密前的密文每一组的长度必须是 16 byte，也就是 128 Bit，不然就会报错，不给加密。</p>
+<p>PKCS5Padding（默认），如果明文块少于 16 byte，就会在缺少的 byte 上自动填充足够相应的字符，且每个字符就等于缺少的字符数，例如 {1, 2, 3, 4, 5, 6, a, b, c, d, e} 按照一个元素一个字节来算的话，少了 16 - 10 &#x3D; 6 个字节，那么如果选择的填充方式是 PKCS5Padding 的话，就会自动对缺失的字符进行填充，最后会变成 {1, 2, 3, 4, 5, 6, a, b, c, d, e, 6, 6, 6, 6, 6, 6}。</p>
+<p>ISO10126Padding 如果明文块少于16个字节（128bit），在明文块末尾补足相应数量的字节，最后一个字符值等于缺少的字符数，其他字符填充随机数。比如明文：{1,2,3,4,5,a,b,c,d,e},缺少6个字节，则可能补全为{1,2,3,4,5,a,b,c,d,e,5,c,3,G,$,6}</p>
+<h3 id="模式"><a href="#模式" class="headerlink" title="模式"></a>模式</h3><p>AES 的模式有很多种，具体体现在将明文转换成密文的处理过程中，常用的模式有：ECB(默认)、CBC、CTR、CFB、OFB 模式。这里就将两个模式，ECB 模式和 CBC 模式。</p>
+<p>ECB（Electronic Codebook Book，译电码本模式），这是最简单的模式，在这个模式中每个明文块都是独立的，互不干涉的，将明文分组后直接对其进行加密，最后拼接密文，就这么简单。其优点是支持并行运算，但因为太简单了，也有缺点，缺点就是同样的明文块会被加密成相同的密文块，安全性较差。</p>
+<p>CBC（Cipher Block Chaining）引入了一个新概念——初始向量 IV。在这个模式中，初始明文会与 IV 进行异或（XOR），后续的每个明文块都要和<strong>前一个明文加密后的密文快</strong>进行异或，但这样会增加复杂度，所以这个模式的缺点就是速度相比 ECB 较慢，不支持并行计算。</p>
+<h3 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h3><p>在大多数语言，比如 Java 的标准库中，我们在调用封装好的 AES 算法时，表面上使用的Key并不是真正用于AES加密解密的密钥，而是用于生成真正密钥的“种子”。同一个种子在同一个加密和解密流程下，生成的数据和解密的数据都是一样的，但如果加密和解密的 AES 包版本不一样的话，可能就解不出来数据。</p>
+<h2 id="RSA"><a href="#RSA" class="headerlink" title="RSA"></a>RSA</h2><h3 id="简介-1"><a href="#简介-1" class="headerlink" title="简介"></a>简介</h3><p>RSA 算法是一款应用广泛的 非堆成加密算法，其存在是依靠目前因式分解难以对大数进行分解，知道公钥的情况下很难推导出私钥。RSA 的加密通式如下：<br><img src="https://img2.eval.moe/qexo/2026/11/9067e6648be4ae634c7854ce7da481f2.png" alt="image"><br>其中密文是对明文进行 E 次方之后对 N 取余的结果，只要知道 E 和 N 之后任何人都可以进行 RSA 加密了，所以 E 和 N 是的组合是公钥，公钥 &#x3D; （E，N）。不过 E 和 N 是通过严格的数学公式算出来的，不是很容易就得来的，E 是 Encrypt 的首字母，N 是 Number 的首字母。<br>解密通式如下：<br><img src="https://img2.eval.moe/qexo/2026/11/a6424c011ac2e183a1ab99a0fdb4c2b5.png" alt="image"><br>其中明文是通过对密文进行 D 次方之后对 N 取余的结果，所以私钥&#x3D;（D，N）。<br>总结如下：</p>
+<table>
+<thead>
+<tr>
+<th>标题</th>
+<th>字母</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>公钥</td>
+<td>E，N</td>
+</tr>
+<tr>
+<td>私钥</td>
+<td>D，N</td>
+</tr>
+<tr>
+<td>密钥对</td>
+<td>E，D，N</td>
+</tr>
+</tbody></table>
+<h3 id="加解密流程"><a href="#加解密流程" class="headerlink" title="加解密流程"></a>加解密流程</h3><p>首先是加密流程：</p>
+<ol>
+<li>取一对质数 p 和 q，这两个数通常都很大，现实一般都位 1024 位以上；</li>
+<li>算模数 n &#x3D; p * q， n 的长度就是密钥的长度，通常位 2048 位，n 是公开的；</li>
+<li>求 L &#x3D; (p-1)(q-1)，L 为 p -1 和 q - 1 的最小公倍数，这个值需要保密，因为靠它能推导出私钥；</li>
+<li>选公钥指数 e：通常直接选 65537（即 0x10001）。要求是 e 与 L 互质。</li>
+<li>算私钥指数 d：求 e 关于 φ(n) 的模逆元，即满足 e × d ≡ 1 (mod φ(n))。这个用扩展欧几里得算法算。</li>
+<li>将明文转换为整数，然后利用公式进行加密<br>解密流程也是套公式，这里就不细讲了。<br>所以只要知道了 p 和 q 就能推导出其他的数。</li>
+</ol>
+<h3 id="练习"><a href="#练习" class="headerlink" title="练习"></a>练习</h3><p>已知：p &#x3D; 11，q &#x3D; 17，公钥指数选 e &#x3D; 7<br>求：<br>n &#x3D; ?</p>
+<blockquote>
+<p>n &#x3D; p * q ，所以 n &#x3D; 11 * 17 &#x3D; 187</p>
+</blockquote>
+<p>L &#x3D; ?</p>
+<blockquote>
+<p>L &#x3D; (p-1)(q-1) &#x3D; 160</p>
+</blockquote>
+<p>验证 e 和 L 是否互质（即 gcd(e, L &#x3D; 1)）</p>
+<blockquote>
+<p>7 和 160 互质，因为它们的公因数只有 1</p>
+</blockquote>
+<p>求私钥指数 d，满足 e × d ≡ 1 (mod L)</p>
+<blockquote>
+<p>d &#x3D; 23，7 × 23 &#x3D; 161 &#x3D; 160 + 1</p>
+</blockquote>
+<p>取明文 m &#x3D; 5，求密文 c &#x3D; m^e mod n</p>
+<blockquote>
+<p>c &#x3D; 5^7 mod 187 &#x3D; 146</p>
+</blockquote>
+<p>用你算出的 d 解密，验证 c^d mod n 是否等于 5</p>
+<blockquote>
+<p>146^23 mod 187 &#x3D; 5</p>
+</blockquote>
+</article><div class="tag_share"><div class="post-share"><div class="social-share" data-image="/img/avatar.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/11/10/web%E6%B8%97%E9%80%8F%E5%AD%A6%E4%B9%A0/XSS-Sec%201-21.html" title="XSS-Sec 1-21"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">XSS-Sec 1-21</div></div><div class="info-2"><div class="info-item-1">简介此为 https://github.com/duckpigdog/XSS-Sec/ 里面的题目，自行分析源码然后构造 payload，不过笔者感觉除了存储型 xss 以外，其他的例如反射性 xss，dom 型 xss，都没有太大的作用，因为都是只能弹本地的 cookie。 Level 1: Reflected XSS源码： 123456789101112131415161718192021&lt;?php// admin.php - Headless Admin Bot for Level 1include &#x27;../headers.php&#x27;;// Only accepts POST requests.// Invisible to the user (no UI output unless in debug mode, but we hide it via JS/CSS).// Security Check: Only allow POSTif ($_SERVER[&#x27;REQUEST_METHOD&#x27;] !== &#x27;POST&#x2...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content is-expand"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#AES"><span class="toc-number">1.</span> <span class="toc-text">AES</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">1.1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AF%86%E9%92%A5"><span class="toc-number">1.2.</span> <span class="toc-text">密钥</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A1%AB%E5%85%85"><span class="toc-number">1.3.</span> <span class="toc-text">填充</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A8%A1%E5%BC%8F"><span class="toc-number">1.4.</span> <span class="toc-text">模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.5.</span> <span class="toc-text">实现</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#RSA"><span class="toc-number">2.</span> <span class="toc-text">RSA</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B-1"><span class="toc-number">2.1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8A%A0%E8%A7%A3%E5%AF%86%E6%B5%81%E7%A8%8B"><span class="toc-number">2.2.</span> <span class="toc-text">加解密流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0"><span class="toc-number">2.3.</span> <span class="toc-text">练习</span></a></li></ol></li></ol></div></div></div></div></main><footer id="footer" style="background: transparent;"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2026 By 凉城</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.7.1.260810"></script><script src="/js/main.js?v=5.7.1.260810"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js" defer="defer"></script><script>document.addEventListener('DOMContentLoaded', () => {
+  const pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+  window.pjax = new Pjax({
+    elements: 'a:not([target="_blank"]):not([data-fancybox])',
+    selectors: pjaxSelectors,
+    cacheBust: false,
+    analytics: false,
+    scrollRestoration: false
+  })
+
+  const triggerPjaxFn = (val) => {
+    if (!val) return
+    Object.values(val).forEach(fn => {
+      try {
+        fn()
+      } catch (err) {
+        console.debug('Pjax callback failed:', err)
+      }
+    })
+  }
+
+  document.addEventListener('pjax:send', () => {
+    // removeEventListener
+    btf.removeGlobalFnEvent('pjaxSendOnce')
+    btf.removeGlobalFnEvent('themeChange')
+
+    // reset readmode
+    const $bodyClassList = document.body.classList
+    if ($bodyClassList.contains('read-mode')) $bodyClassList.remove('read-mode')
+
+    triggerPjaxFn(window.globalFn.pjaxSend)
+  })
+
+  document.addEventListener('pjax:complete', () => {
+    btf.removeGlobalFnEvent('pjaxCompleteOnce')
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+      if (!item.parentNode) return
+      const newScript = document.createElement('script')
+      const content = item.text || item.textContent || ''
+      Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+      newScript.appendChild(document.createTextNode(content))
+      item.parentNode.replaceChild(newScript, item)
+    })
+
+    triggerPjaxFn(window.globalFn.pjaxComplete)
+  })
+
+  document.addEventListener('pjax:error', e => {
+    const responseURL = e.request && e.request.responseURL
+    if (e.request && e.request.status === 404) {
+      false
+        ? pjax.loadUrl('/404.html')
+        : responseURL && (window.location.href = responseURL)
+    } else if (responseURL) {
+      window.location.href = responseURL
+    }
+  })
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=5.7.1.260810"></script></div></div></body></html>
